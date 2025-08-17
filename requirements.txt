@@ -1,0 +1,7 @@
+# Core dependencies for configuration management
+python-dotenv>=1.0.0
+
+# Future dependencies (commented out for now)
+# supabase>=2.0.0
+# httpx>=0.25.0
+# click>=8.0.0

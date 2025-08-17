@@ -7,7 +7,7 @@
     - Create indexes for filename and content_hash for efficient lookups
     - _Requirements: 1.3, 5.2, 5.3_
 
-  - [ ] 1.2 Set up basic configuration management
+  - [x] 1.2 Set up basic configuration management
     - Create configuration classes for Supabase connection settings
     - Implement environment variable loading for database credentials
     - Add configuration validation to ensure required settings are present
