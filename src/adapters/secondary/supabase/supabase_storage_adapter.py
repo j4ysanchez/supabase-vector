@@ -1,7 +1,7 @@
 """Supabase storage adapter implementation."""
 
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 from uuid import UUID, uuid4
 
@@ -76,8 +76,8 @@ class SupabaseStorageAdapter(StoragePort):
                         **document.metadata,
                         **chunk.metadata
                     },
-                    'created_at': datetime.utcnow().isoformat(),
-                    'updated_at': datetime.utcnow().isoformat()
+                    'created_at': datetime.now(timezone.utc).isoformat(),
+                    'updated_at': datetime.now(timezone.utc).isoformat()
                 }
                 records.append(record)
             
