@@ -106,7 +106,7 @@ class ApplicationConfig:
         """Get list of required environment variables."""
         return [
             "SUPABASE_URL",
-            "SUPABASE_SERVICE_KEY", 
+            "SUPABASE_SERVICE_KEY or SUPABASE_KEY", 
             "OLLAMA_BASE_URL"
         ]
     
@@ -149,7 +149,7 @@ Required Environment Variables:
 Example .env file:
 ------------------
 SUPABASE_URL=https://your-project.supabase.co
-SUPABASE_SERVICE_KEY=your-service-key-here
+SUPABASE_KEY=your-service-key-here
 OLLAMA_BASE_URL=http://localhost:11434
 OLLAMA_MODEL_NAME=nomic-embed-text
 LOG_LEVEL=INFO
