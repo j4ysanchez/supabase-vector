@@ -1,0 +1,1 @@
+"""Secondary adapters package for outbound integrations."""
