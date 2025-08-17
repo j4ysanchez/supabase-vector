@@ -1,64 +1,83 @@
 # Implementation Plan
 
-- [ ] 1. Set up project structure and core domain models
+- [ ] 1. Set up Supabase database and validate vector storage
+  - [ ] 1.1 Create Supabase database schema with vector support
+    - Write SQL migration scripts for documents table with vector column
+    - Add proper indexes for vector similarity search (ivfflat)
+    - Create indexes for filename and content_hash for efficient lookups
+    - _Requirements: 1.3, 5.2, 5.3_
+
+  - [ ] 1.2 Set up basic configuration management
+    - Create configuration classes for Supabase connection settings
+    - Implement environment variable loading for database credentials
+    - Add configuration validation to ensure required settings are present
+    - _Requirements: 2.1, 2.2, 2.4_
+
+  - [ ] 1.3 Create minimal StoragePort interface and Supabase adapter
+    - Define StoragePort interface with basic store/retrieve/health methods
+    - Implement SupabaseStorageAdapter with connection management
+    - Add proper error handling and retry logic for database operations
+    - _Requirements: 1.3, 2.1, 4.2_
+
+  - [ ] 1.4 Write integration tests for Supabase vector storage
+    - Create test that connects to Supabase and verifies table structure
+    - Test storing and retrieving documents with vector embeddings
+    - Verify vector similarity search functionality works correctly
+    - Add tests for error scenarios (connection failures, invalid data)
+    - _Requirements: 1.3, 4.2_
+
+- [ ] 2. Set up Ollama embedding service and validate integration
+  - [ ] 2.1 Create EmbeddingPort interface and Ollama adapter
+    - Define EmbeddingPort interface for embedding generation
+    - Implement OllamaEmbeddingAdapter using httpx for async HTTP calls
+    - Add proper error handling for network failures and API errors
+    - _Requirements: 1.2, 2.1, 4.1, 4.3_
+
+  - [ ] 2.2 Write integration tests for Ollama embedding generation
+    - Test connection to Ollama service and model availability
+    - Verify embedding generation produces expected vector dimensions
+    - Test batch processing for multiple text inputs
+    - Add tests for error scenarios (service unavailable, invalid model)
+    - _Requirements: 1.2, 4.1, 4.3_
+
+  - [ ] 2.3 Create end-to-end test for embedding storage workflow
+    - Test complete flow: text → embedding → Supabase storage
+    - Verify stored embeddings can be retrieved and used for similarity search
+    - Test with various text sizes and content types
+    - _Requirements: 1.2, 1.3_
+
+- [ ] 3. Set up project structure and core domain models
   - Create directory structure following hexagonal architecture (domain/, ports/, adapters/, application/, infrastructure/)
   - Define core domain models (Document, DocumentChunk, ProcessingResult) with proper typing
   - Implement basic value objects and domain exceptions
   - _Requirements: 1.1, 5.2, 5.3_
 
-- [ ] 2. Implement domain services for business logic
-  - [ ] 2.1 Create DocumentProcessor domain service
+- [ ] 4. Implement domain services for business logic
+  - [ ] 4.1 Create DocumentProcessor domain service
     - Implement document chunking logic with configurable size and overlap
     - Add content hashing functionality for duplicate detection
     - Write unit tests for chunking edge cases and hash generation
     - _Requirements: 5.1, 5.4_
 
-  - [ ] 2.2 Create EmbeddingOrchestrator domain service  
+  - [ ] 4.2 Create EmbeddingOrchestrator domain service  
     - Implement orchestration logic for embedding generation and storage
     - Add batch processing capabilities for efficiency
     - Write unit tests with mock ports for isolation testing
     - _Requirements: 1.2, 1.3, 4.4_
 
-- [ ] 3. Define secondary ports (interfaces)
-  - [ ] 3.1 Create StoragePort interface
-    - Define abstract methods for document storage, retrieval, and health checks
-    - Include type hints and comprehensive docstrings
-    - Add error handling specifications in interface documentation
-    - _Requirements: 1.3, 4.2_
-
-  - [ ] 3.2 Create EmbeddingPort interface
-    - Define abstract methods for embedding generation and health checks
-    - Specify batch processing capabilities in interface
-    - Document expected input/output formats and error conditions
-    - _Requirements: 1.2, 4.1_
-
-  - [ ] 3.3 Create FileSystemPort interface
-    - Define abstract methods for file reading and directory listing
-    - Include path validation and error handling specifications
-    - Add support for filtering .txt files in directory operations
-    - _Requirements: 1.1, 3.3_
-
-- [ ] 4. Implement secondary adapters
-  - [ ] 4.1 Create SupabaseStorageAdapter
-    - Implement StoragePort interface using Supabase Python client
-    - Add connection management, retry logic with exponential backoff
-    - Implement upsert logic for handling duplicate documents
-    - Write integration tests with test database
-    - _Requirements: 1.3, 2.1, 4.2, 5.4_
-
-  - [ ] 4.2 Create OllamaEmbeddingAdapter
-    - Implement EmbeddingPort interface using httpx for async HTTP calls
-    - Add proper error handling for network failures and API errors
-    - Implement batch processing for multiple text inputs
-    - Write unit tests with mocked HTTP responses
-    - _Requirements: 1.2, 2.1, 4.1, 4.3_
-
-  - [ ] 4.3 Create LocalFileSystemAdapter
-    - Implement FileSystemPort interface for local file operations
+- [ ] 5. Complete secondary adapters and ports
+  - [ ] 5.1 Create FileSystemPort interface and adapter
+    - Define FileSystemPort interface for file reading and directory listing
+    - Implement LocalFileSystemAdapter for local file operations
     - Add proper error handling for file access permissions and missing files
-    - Implement recursive directory traversal for .txt files
     - Write unit tests with temporary test files
     - _Requirements: 1.1, 3.3, 4.1_
+
+  - [ ] 5.2 Enhance existing adapters with full functionality
+    - Add comprehensive error handling and logging to Supabase adapter
+    - Implement upsert logic for handling duplicate documents
+    - Add batch processing optimizations to Ollama adapter
+    - _Requirements: 4.2, 4.4, 5.4_
 
 - [ ] 5. Create application services layer
   - [ ] 5.1 Define primary port (DocumentIngestionPort interface)
