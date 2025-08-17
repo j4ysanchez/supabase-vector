@@ -1,4 +1,4 @@
--- Migration: Create Row Level Security policies
+-- Migration: Create Row Level Security policies (FIXED VERSION)
 -- Description: Add security policies for data protection
 -- Requirements: 1.3, 5.2, 5.3
 
@@ -32,4 +32,24 @@ CREATE POLICY "Allow authenticated delete access" ON documents
 
 -- Grant necessary permissions to authenticated role
 GRANT SELECT, INSERT, UPDATE, DELETE ON documents TO authenticated;
-GRANT USAGE ON SEQUENCE documents_id_seq TO authenticated;
+-- Note: No sequence grant needed since we use UUID primary keys with gen_random_uuid()
+
+-- Verify RLS is enabled
+SELECT 
+    schemaname,
+    tablename,
+    rowsecurity as rls_enabled
+FROM pg_tables 
+WHERE tablename = 'documents';
+
+-- Show created policies
+SELECT 
+    policyname,
+    permissive,
+    roles,
+    cmd,
+    qual,
+    with_check
+FROM pg_policies 
+WHERE tablename = 'documents'
+ORDER BY policyname;
