@@ -19,7 +19,7 @@
     - Add proper error handling and retry logic for database operations
     - _Requirements: 1.3, 2.1, 4.2_
 
-  - [ ] 1.4 Write integration tests for Supabase vector storage
+  - [x] 1.4 Write integration tests for Supabase vector storage
     - Create test that connects to Supabase and verifies table structure
     - Test storing and retrieving documents with vector embeddings
     - Verify vector similarity search functionality works correctly

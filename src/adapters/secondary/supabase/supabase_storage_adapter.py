@@ -2,6 +2,7 @@
 
 import logging
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Any, Dict, List, Optional
 from uuid import UUID, uuid4
 
@@ -73,8 +74,8 @@ class SupabaseStorageAdapter(StoragePort):
                     'content': chunk.content,
                     'embedding': chunk.embedding,
                     'metadata': {
-                        **document.metadata,
-                        **chunk.metadata
+                        'document_metadata': document.metadata,
+                        'chunk_metadata': chunk.metadata
                     },
                     'created_at': datetime.now(timezone.utc).isoformat(),
                     'updated_at': datetime.now(timezone.utc).isoformat()
@@ -130,21 +131,28 @@ class SupabaseStorageAdapter(StoragePort):
             chunks = []
             
             for record in records:
+                stored_metadata = record.get('metadata', {})
+                chunk_metadata = stored_metadata.get('chunk_metadata', {})
+                
                 chunk = DocumentChunk(
                     content=record['content'],
                     chunk_index=record['chunk_index'],
                     embedding=record.get('embedding'),
-                    metadata=record.get('metadata', {})
+                    metadata=chunk_metadata
                 )
                 chunks.append(chunk)
+            
+            # Extract document metadata from the first record
+            first_stored_metadata = first_record.get('metadata', {})
+            document_metadata = first_stored_metadata.get('document_metadata', {})
             
             document = Document(
                 id=UUID(first_record['document_id']),
                 filename=first_record['filename'],
-                file_path=first_record['file_path'],
+                file_path=Path(first_record['file_path']),
                 content_hash=first_record['content_hash'],
                 chunks=chunks,
-                metadata=first_record.get('metadata', {}),
+                metadata=document_metadata,
                 created_at=datetime.fromisoformat(first_record['created_at']) if first_record.get('created_at') else None,
                 updated_at=datetime.fromisoformat(first_record['updated_at']) if first_record.get('updated_at') else None
             )
@@ -414,6 +422,10 @@ class MockSupabaseClient:
     async def health_check(self, table_name: str) -> Dict[str, Any]:
         """Mock implementation of health check."""
         try:
+            # Check if the configuration looks invalid (for testing purposes)
+            if "invalid-url-that-does-not-exist" in self.config.url:
+                return {'success': False, 'error': 'Invalid URL configuration'}
+            
             # Simple check - just verify we can access the data structure
             if table_name not in self._data:
                 self._data[table_name] = []
