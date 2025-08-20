@@ -26,8 +26,13 @@ class TestSupabaseStorageAdapter:
     
     @pytest.fixture
     def adapter(self, config):
-        """Create a storage adapter instance."""
-        return SupabaseStorageAdapter(config)
+        """Create a storage adapter instance with mock client."""
+        from tests.factories.storage_factory import create_mock_storage_adapter
+        return create_mock_storage_adapter(
+            url=config.url,
+            service_key=config.service_key,
+            table_name=config.table_name
+        )
     
     @pytest.fixture
     def sample_document(self):
@@ -129,14 +134,12 @@ class TestSupabaseStorageAdapter:
     async def test_list_documents_empty(self, adapter):
         """Test listing documents when none exist."""
         # Use a fresh adapter with different table name to ensure empty state
-        config = SupabaseConfig(
+        from tests.factories.storage_factory import create_mock_storage_adapter
+        empty_adapter = create_mock_storage_adapter(
             url="https://test.supabase.co",
             service_key="test-key",
-            table_name="empty_test_table",
-            timeout=30,
-            max_retries=3
+            table_name="empty_test_table"
         )
-        empty_adapter = SupabaseStorageAdapter(config)
         
         documents = await empty_adapter.list_documents()
         assert len(documents) == 0

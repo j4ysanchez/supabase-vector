@@ -7,7 +7,8 @@ from pathlib import Path
 from uuid import uuid4
 from unittest.mock import patch, AsyncMock
 
-from src.adapters.secondary.supabase.supabase_storage_adapter import SupabaseStorageAdapter, MockSupabaseClient
+from src.adapters.secondary.supabase.supabase_storage_adapter import SupabaseStorageAdapter
+from tests.mocks.mock_supabase_client import MockSupabaseClient
 from src.domain.models.document import Document, DocumentChunk
 from src.domain.exceptions import StorageError
 from src.infrastructure.config.supabase_config import SupabaseConfig
@@ -569,10 +570,12 @@ class TestSupabaseStorageAdapterUnit:
     @pytest.fixture
     def adapter_with_mock_client(self, mock_config):
         """Create adapter with a mock client for unit testing."""
-        adapter = SupabaseStorageAdapter(mock_config)
-        # Pre-initialize with mock client
-        adapter._client = MockSupabaseClient(mock_config)
-        return adapter
+        from tests.factories.storage_factory import create_mock_storage_adapter
+        return create_mock_storage_adapter(
+            url=mock_config.url,
+            service_key=mock_config.service_key,
+            table_name=mock_config.table_name
+        )
     
     @pytest.mark.asyncio
     async def test_mock_client_functionality(self, adapter_with_mock_client):
