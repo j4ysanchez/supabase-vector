@@ -430,6 +430,7 @@ class TestLiveSupabaseIntegration:
         print("✅ Error scenarios handled correctly!")
 
 
+@pytest.mark.live
 class TestLiveSupabaseExploration:
     """Interactive tests for exploring live Supabase data.
     
