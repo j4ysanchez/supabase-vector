@@ -9,6 +9,132 @@ from typing import Any, Dict, List
 from src.infrastructure.config.supabase_config import SupabaseConfig
 
 
+class MockSupabaseResponse:
+    """Mock response object that mimics Supabase response structure."""
+    
+    def __init__(self, data=None, count=None, error=None):
+        self.data = data
+        self.count = count
+        self.error = error
+
+
+class MockSupabaseTable:
+    """Mock table object that mimics Supabase table operations."""
+    
+    def __init__(self, table_name: str, storage: dict):
+        self.table_name = table_name
+        self.storage = storage
+        self._query_filters = {}
+        self._query_order = None
+        self._query_limit = None
+        self._query_select = "*"
+    
+    def select(self, columns="*", count=None):
+        """Mock select operation."""
+        self._query_select = columns
+        self._query_count = count
+        return self
+    
+    def insert(self, records):
+        """Mock insert operation."""
+        if self.table_name not in self.storage:
+            self.storage[self.table_name] = []
+        
+        if isinstance(records, dict):
+            records = [records]
+        
+        self.storage[self.table_name].extend(records)
+        # Store the records for later execution
+        self._insert_records = records
+        return self
+    
+    def eq(self, column, value):
+        """Mock equality filter."""
+        self._query_filters[column] = value
+        return self
+    
+    def order(self, column, desc=False):
+        """Mock order operation."""
+        self._query_order = (column, desc)
+        return self
+    
+    def limit(self, count):
+        """Mock limit operation."""
+        self._query_limit = count
+        return self
+    
+    def delete(self):
+        """Mock delete operation."""
+        return self
+    
+    def execute(self):
+        """Execute the query and return results."""
+        # Handle insert operations
+        if hasattr(self, '_insert_records'):
+            return MockSupabaseResponse(data=self._insert_records)
+        
+        if self.table_name not in self.storage:
+            return MockSupabaseResponse(data=[])
+        
+        records = self.storage[self.table_name][:]
+        
+        # Apply filters
+        for column, value in self._query_filters.items():
+            if '->' in column:  # JSON query like 'metadata->>document_id'
+                json_path = column.split('->>')
+                if len(json_path) == 2:
+                    field, key = json_path
+                    records = [r for r in records if r.get(field, {}).get(key) == value]
+            else:
+                records = [r for r in records if r.get(column) == value]
+        
+        # Apply ordering
+        if self._query_order:
+            column, desc = self._query_order
+            records = sorted(records, key=lambda x: x.get(column, 0), reverse=desc)
+        
+        # Apply limit
+        if self._query_limit:
+            records = records[:self._query_limit]
+        
+        # For delete operations, remove the records
+        if hasattr(self, '_is_delete'):
+            original_count = len(self.storage[self.table_name])
+            # Remove matching records
+            remaining = []
+            for record in self.storage[self.table_name]:
+                should_delete = True
+                for column, value in self._query_filters.items():
+                    if '->' in column:
+                        json_path = column.split('->>')
+                        if len(json_path) == 2:
+                            field, key = json_path
+                            if record.get(field, {}).get(key) != value:
+                                should_delete = False
+                                break
+                    else:
+                        if record.get(column) != value:
+                            should_delete = False
+                            break
+                if not should_delete:
+                    remaining.append(record)
+            
+            deleted_records = [r for r in self.storage[self.table_name] if r not in remaining]
+            self.storage[self.table_name] = remaining
+            return MockSupabaseResponse(data=deleted_records)
+        
+        # For count queries
+        if self._query_select == "count" or hasattr(self, '_query_count') and self._query_count:
+            return MockSupabaseResponse(data=[], count=len(records))
+        
+        return MockSupabaseResponse(data=records)
+    
+    def delete(self):
+        """Mark this as a delete operation."""
+        self._is_delete = True
+        return self
+
+
 class MockSupabaseClient:
     """Mock Supabase client for testing and development.
     
@@ -25,119 +151,10 @@ class MockSupabaseClient:
         self.config = config
         self._data = {}  # In-memory storage for testing
     
-    async def insert_records(self, table_name: str, records: List[Dict[str, Any]]) -> Dict[str, Any]:
-        """Mock implementation of record insertion."""
-        try:
-            if table_name not in self._data:
-                self._data[table_name] = []
-            
-            self._data[table_name].extend(records)
-            return {'success': True, 'count': len(records)}
-        except Exception as e:
-            return {'success': False, 'error': str(e)}
-    
-    async def select_records(
-        self, 
-        table_name: str, 
-        filters: Dict[str, Any] = None, 
-        order_by: str = None, 
-        limit: int = None
-    ) -> Dict[str, Any]:
-        """Mock implementation of record selection."""
-        try:
-            if table_name not in self._data:
-                return {'success': True, 'data': []}
-            
-            records = self._data[table_name]
-            
-            # Apply filters
-            if filters:
-                filtered_records = []
-                for record in records:
-                    match = True
-                    for key, value in filters.items():
-                        if record.get(key) != value:
-                            match = False
-                            break
-                    if match:
-                        filtered_records.append(record)
-                records = filtered_records
-            
-            # Apply ordering
-            if order_by and records:
-                records = sorted(records, key=lambda x: x.get(order_by, 0))
-            
-            # Apply limit
-            if limit:
-                records = records[:limit]
-            
-            return {'success': True, 'data': records}
-        except Exception as e:
-            return {'success': False, 'error': str(e)}
-    
-    async def select_distinct_documents(
-        self, 
-        table_name: str, 
-        limit: int = 100, 
-        offset: int = 0
-    ) -> Dict[str, Any]:
-        """Mock implementation of distinct document selection."""
-        try:
-            if table_name not in self._data:
-                return {'success': True, 'data': []}
-            
-            # Get unique document IDs
-            document_ids = set()
-            for record in self._data[table_name]:
-                if 'document_id' in record:
-                    document_ids.add(record['document_id'])
-            
-            # Apply pagination
-            document_ids = list(document_ids)[offset:offset + limit]
-            
-            return {'success': True, 'data': document_ids}
-        except Exception as e:
-            return {'success': False, 'error': str(e)}
-    
-    async def delete_records(self, table_name: str, filters: Dict[str, Any]) -> Dict[str, Any]:
-        """Mock implementation of record deletion."""
-        try:
-            if table_name not in self._data:
-                return {'success': True, 'count': 0}
-            
-            original_count = len(self._data[table_name])
-            
-            # Remove matching records
-            remaining_records = []
-            for record in self._data[table_name]:
-                match = True
-                for key, value in filters.items():
-                    if record.get(key) != value:
-                        match = False
-                        break
-                if not match:
-                    remaining_records.append(record)
-            
-            self._data[table_name] = remaining_records
-            deleted_count = original_count - len(remaining_records)
-            
-            return {'success': True, 'count': deleted_count}
-        except Exception as e:
-            return {'success': False, 'error': str(e)}
-    
-    async def health_check(self, table_name: str) -> Dict[str, Any]:
-        """Mock implementation of health check."""
-        try:
-            # Check if the configuration looks invalid (for testing purposes)
-            if "invalid-url-that-does-not-exist" in self.config.url:
-                return {'success': False, 'error': 'Invalid URL configuration'}
-            
-            # Simple check - just verify we can access the data structure
-            if table_name not in self._data:
-                self._data[table_name] = []
-            return {'success': True}
-        except Exception as e:
-            return {'success': False, 'error': str(e)}
+    def table(self, table_name: str):
+        """Get a table interface."""
+        return MockSupabaseTable(table_name, self._data)
+
     
     def clear_data(self):
         """Clear all mock data (useful for test cleanup)."""

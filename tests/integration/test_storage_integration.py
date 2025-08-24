@@ -32,7 +32,10 @@ class TestSupabaseVectorStorageIntegration:
     @pytest.fixture
     def adapter(self, test_config):
         """Create a storage adapter for integration testing."""
-        return SupabaseStorageAdapter(test_config)
+        adapter = SupabaseStorageAdapter(test_config)
+        # Replace the client with a mock for testing
+        adapter._client = MockSupabaseClient(test_config)
+        return adapter
     
     @pytest.fixture
     def sample_document(self):

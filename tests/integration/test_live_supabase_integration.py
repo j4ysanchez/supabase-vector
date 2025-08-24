@@ -440,7 +440,10 @@ class TestLiveSupabaseExploration:
     @pytest.fixture(scope="class")
     def live_config(self):
         """Create configuration from environment variables."""
-        return SupabaseConfig.from_env()
+        try:
+            return SupabaseConfig.from_env()
+        except Exception as e:
+            pytest.skip(f"Supabase configuration not available: {e}")
     
     @pytest.fixture(scope="class")
     def live_adapter(self, live_config):

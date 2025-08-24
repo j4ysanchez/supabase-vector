@@ -64,8 +64,7 @@ class SupabaseStorageAdapter(StoragePort):
             records = []
             for chunk in document.chunks:
                 record = {
-                    'id': uuid4(),
-                    'document_id': str(document.id),
+                    # Each chunk gets its own UUID as the primary key
                     'filename': document.filename,
                     'file_path': str(document.file_path),
                     'content_hash': document.content_hash,
@@ -73,22 +72,21 @@ class SupabaseStorageAdapter(StoragePort):
                     'content': chunk.content,
                     'embedding': chunk.embedding,
                     'metadata': {
+                        'document_id': str(document.id),  # Store document ID in metadata
                         'document_metadata': document.metadata,
                         'chunk_metadata': chunk.metadata
-                    },
-                    'created_at': datetime.now(timezone.utc).isoformat(),
-                    'updated_at': datetime.now(timezone.utc).isoformat()
+                    }
                 }
                 records.append(record)
             
             # Store all chunks in a single batch operation
-            result = await client.insert_records(self._config.table_name, records)
+            result = client.table(self._config.table_name).insert(records).execute()
             
-            if result.get('success', False):
+            if result.data:
                 logger.info(f"Successfully stored document {document.filename} with {len(records)} chunks")
                 return True
             else:
-                logger.error(f"Failed to store document {document.filename}: {result.get('error', 'Unknown error')}")
+                logger.error(f"Failed to store document {document.filename}: No data returned from insert")
                 return False
                 
         except Exception as e:
@@ -111,17 +109,18 @@ class SupabaseStorageAdapter(StoragePort):
         try:
             client = await self._get_client()
             
-            # Query for all chunks of the document
-            result = await client.select_records(
-                self._config.table_name,
-                filters={'document_id': str(document_id)},
-                order_by='chunk_index'
-            )
+            # Query for all chunks of the document using metadata filter
+            # Since document_id is stored in metadata, we need to use a JSON query
+            result = client.table(self._config.table_name)\
+                .select("*")\
+                .eq('metadata->>document_id', str(document_id))\
+                .order('chunk_index')\
+                .execute()
             
-            if not result.get('success', False) or not result.get('data'):
+            if not result.data:
                 return None
             
-            records = result['data']
+            records = result.data
             if not records:
                 return None
             
@@ -133,10 +132,21 @@ class SupabaseStorageAdapter(StoragePort):
                 stored_metadata = record.get('metadata', {})
                 chunk_metadata = stored_metadata.get('chunk_metadata', {})
                 
+                # Handle embedding - it might be stored as a string or list
+                embedding = record.get('embedding')
+                if embedding and isinstance(embedding, str):
+                    # Parse string representation back to list
+                    try:
+                        import json
+                        embedding = json.loads(embedding.replace('[', '[').replace(']', ']'))
+                    except:
+                        # If parsing fails, keep as is
+                        pass
+                
                 chunk = DocumentChunk(
                     content=record['content'],
                     chunk_index=record['chunk_index'],
-                    embedding=record.get('embedding'),
+                    embedding=embedding,
                     metadata=chunk_metadata
                 )
                 chunks.append(chunk)
@@ -146,14 +156,14 @@ class SupabaseStorageAdapter(StoragePort):
             document_metadata = first_stored_metadata.get('document_metadata', {})
             
             document = Document(
-                id=UUID(first_record['document_id']),
+                id=document_id,
                 filename=first_record['filename'],
                 file_path=Path(first_record['file_path']),
                 content_hash=first_record['content_hash'],
                 chunks=chunks,
                 metadata=document_metadata,
-                created_at=datetime.fromisoformat(first_record['created_at']) if first_record.get('created_at') else None,
-                updated_at=datetime.fromisoformat(first_record['updated_at']) if first_record.get('updated_at') else None
+                created_at=datetime.fromisoformat(first_record['created_at'].replace('Z', '+00:00')) if first_record.get('created_at') else None,
+                updated_at=datetime.fromisoformat(first_record['updated_at'].replace('Z', '+00:00')) if first_record.get('updated_at') else None
             )
             
             logger.info(f"Successfully retrieved document {document.filename} with {len(chunks)} chunks")
@@ -180,23 +190,27 @@ class SupabaseStorageAdapter(StoragePort):
             client = await self._get_client()
             
             # Query for document by content hash
-            result = await client.select_records(
-                self._config.table_name,
-                filters={'content_hash': content_hash},
-                order_by='chunk_index',
-                limit=1
-            )
+            result = client.table(self._config.table_name)\
+                .select("*")\
+                .eq('content_hash', content_hash)\
+                .order('chunk_index')\
+                .limit(1)\
+                .execute()
             
-            if not result.get('success', False) or not result.get('data'):
+            if not result.data:
                 return None
             
-            records = result['data']
+            records = result.data
             if not records:
                 return None
             
-            # Get the document_id from the first record and retrieve full document
-            document_id = UUID(records[0]['document_id'])
-            return await self.retrieve_document(document_id)
+            # Get the document_id from the first record's metadata and retrieve full document
+            first_metadata = records[0].get('metadata', {})
+            document_id_str = first_metadata.get('document_id')
+            if document_id_str:
+                document_id = UUID(document_id_str)
+                return await self.retrieve_document(document_id)
+            return None
             
         except Exception as e:
             logger.error(f"Error finding document by hash {content_hash}: {e}")
@@ -219,21 +233,31 @@ class SupabaseStorageAdapter(StoragePort):
         try:
             client = await self._get_client()
             
-            # Get distinct document IDs with pagination
-            result = await client.select_distinct_documents(
-                self._config.table_name,
-                limit=limit,
-                offset=offset
-            )
+            # Get distinct document IDs from metadata with pagination
+            result = client.table(self._config.table_name)\
+                .select("metadata, filename, created_at")\
+                .order('created_at', desc=True)\
+                .limit(limit * 5)\
+                .execute()  # Get more records to account for multiple chunks per document
             
-            if not result.get('success', False):
-                raise StorageError(f"Failed to list documents: {result.get('error', 'Unknown error')}")
+            if not result.data:
+                return []
             
-            document_ids = result.get('data', [])
+            # Get unique document IDs from metadata
+            seen_ids = set()
+            document_ids = []
+            for record in result.data:
+                metadata = record.get('metadata', {})
+                doc_id = metadata.get('document_id')
+                if doc_id and doc_id not in seen_ids:
+                    seen_ids.add(doc_id)
+                    document_ids.append(doc_id)
+                    if len(document_ids) >= limit:  # Respect the limit
+                        break
             documents = []
             
-            # Retrieve each document
-            for doc_id in document_ids:
+            # Retrieve each unique document
+            for doc_id in document_ids[offset:offset + limit]:
                 document = await self.retrieve_document(UUID(doc_id))
                 if document:
                     documents.append(document)
@@ -261,14 +285,14 @@ class SupabaseStorageAdapter(StoragePort):
         try:
             client = await self._get_client()
             
-            # Delete all chunks for the document
-            result = await client.delete_records(
-                self._config.table_name,
-                filters={'document_id': str(document_id)}
-            )
+            # Delete all chunks for the document using metadata filter
+            result = client.table(self._config.table_name)\
+                .delete()\
+                .eq('metadata->>document_id', str(document_id))\
+                .execute()
             
-            if result.get('success', False):
-                deleted_count = result.get('count', 0)
+            if result.data is not None:
+                deleted_count = len(result.data) if result.data else 0
                 if deleted_count > 0:
                     logger.info(f"Successfully deleted document {document_id} ({deleted_count} chunks)")
                     return True
@@ -276,7 +300,7 @@ class SupabaseStorageAdapter(StoragePort):
                     logger.info(f"Document {document_id} not found for deletion")
                     return False
             else:
-                logger.error(f"Failed to delete document {document_id}: {result.get('error', 'Unknown error')}")
+                logger.error(f"Failed to delete document {document_id}")
                 return False
                 
         except Exception as e:
@@ -293,14 +317,13 @@ class SupabaseStorageAdapter(StoragePort):
             client = await self._get_client()
             
             # Perform a simple query to check connectivity
-            result = await client.health_check(self._config.table_name)
+            result = client.table(self._config.table_name)\
+                .select("count", count="exact")\
+                .limit(1)\
+                .execute()
             
-            if result.get('success', False):
-                logger.info("Supabase storage health check passed")
-                return True
-            else:
-                logger.warning(f"Supabase storage health check failed: {result.get('error', 'Unknown error')}")
-                return False
+            logger.info(f"Supabase storage health check passed. Table has {result.count} records")
+            return True
                 
         except Exception as e:
             logger.error(f"Supabase storage health check error: {e}")

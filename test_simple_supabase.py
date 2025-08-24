@@ -6,6 +6,7 @@ This test will help you explore your database and validate the setup.
 
 import os
 import asyncio
+import pytest
 from dotenv import load_dotenv
 from supabase import create_client
 from uuid import uuid4
@@ -13,6 +14,7 @@ from uuid import uuid4
 # Load environment variables
 load_dotenv()
 
+@pytest.mark.asyncio
 async def test_supabase_connection():
     """Test basic Supabase connection and table access."""
     print("🧪 Testing Supabase Connection")
