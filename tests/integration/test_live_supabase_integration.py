@@ -246,26 +246,18 @@ class TestLiveSupabaseIntegration:
     def live_config(self):
         """Create configuration from environment variables."""
         try:
-            # Try to load service role key first, fall back to regular key
-            service_key = os.getenv("SUPABASE_SERVICE_KEY") or os.getenv("SUPABASE_KEY")
-            url = os.getenv("SUPABASE_URL")
+            # Use the get_supabase_config function
+            config = get_supabase_config()
             
-            if not url or not service_key:
-                pytest.skip("SUPABASE_URL and SUPABASE_SERVICE_KEY (or SUPABASE_KEY) must be set")
-            
-            config = SupabaseConfig(
-                url=url,
-                service_key=service_key,
-                table_name=os.getenv("SUPABASE_TABLE_NAME", "documents"),
-                timeout=int(os.getenv("SUPABASE_TIMEOUT", "30")),
-                max_retries=int(os.getenv("SUPABASE_MAX_RETRIES", "3"))
-            )
+            # Check if required environment variables are set
+            if not config.url or not config.service_key:
+                pytest.skip("SUPABASE_URL and SUPABASE_SERVICE_KEY must be set")
             
             print(f"\n🔧 Using Supabase URL: {config.url}")
             print(f"🔧 Using table: {config.table_name}")
             
             # Check if using service role key
-            if "service_role" in service_key or len(service_key) > 200:
+            if "service_role" in config.service_key or len(config.service_key) > 200:
                 print("🔧 Using service role key (bypasses RLS)")
             else:
                 print("⚠️  Using anonymous key (may have RLS restrictions)")
@@ -442,7 +434,7 @@ class TestLiveSupabaseExploration:
     def live_config(self):
         """Create configuration from environment variables."""
         try:
-            return SupabaseConfig.from_env()
+            return get_supabase_config()
         except Exception as e:
             pytest.skip(f"Supabase configuration not available: {e}")
     
