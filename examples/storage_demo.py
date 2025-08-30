@@ -28,7 +28,7 @@ async def demonstrate_storage_operations():
     # 1. Create configuration
     logger.info("1. Creating Supabase configuration...")
     config = get_supabase_config()
-    )
+    
     
     # 2. Create storage adapter
     logger.info("2. Initializing Supabase storage adapter...")
@@ -47,17 +47,21 @@ async def demonstrate_storage_operations():
     logger.info("4. Creating sample documents...")
     
     # Document 1: Simple text document
+    # Create 768-dimensional embeddings (matching Supabase schema)
+    embedding1 = [0.1] * 768  # Simple mock embedding with 768 dimensions
+    embedding2 = [0.2] * 768  # Another mock embedding with 768 dimensions
+    
     doc1_chunks = [
         DocumentChunk(
             content="Introduction to vector databases and their applications in modern AI systems.",
             chunk_index=0,
-            embedding=[0.1, 0.2, 0.3, 0.4, 0.5],
+            embedding=embedding1,
             metadata={"section": "introduction", "word_count": 12}
         ),
         DocumentChunk(
             content="Vector databases enable efficient similarity search and retrieval of high-dimensional data.",
             chunk_index=1,
-            embedding=[0.6, 0.7, 0.8, 0.9, 1.0],
+            embedding=embedding2,
             metadata={"section": "overview", "word_count": 13}
         )
     ]
@@ -76,11 +80,13 @@ async def demonstrate_storage_operations():
     )
     
     # Document 2: Technical documentation
+    embedding3 = [0.3] * 768  # Third mock embedding with 768 dimensions
+    
     doc2_chunks = [
         DocumentChunk(
             content="Implementation details for embedding generation using transformer models.",
             chunk_index=0,
-            embedding=[1.1, 1.2, 1.3, 1.4, 1.5],
+            embedding=embedding3,
             metadata={"section": "implementation", "technical_level": "advanced"}
         )
     ]

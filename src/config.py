@@ -13,7 +13,8 @@ class Config(BaseSettings):
     
     # Supabase Configuration
     supabase_url: str = Field(..., description="Supabase project URL")
-    supabase_key: str = Field(..., description="Supabase service role key")
+    supabase_anon_key: str = Field(..., alias="SUPABASE_KEY", description="Supabase anonymous key")
+    supabase_service_key: str = Field(..., alias="SUPABASE_SERVICE_KEY", description="Supabase service role key")
     supabase_table: str = Field(default="documents", alias="SUPABASE_TABLE_NAME", description="Table name for document storage")
     supabase_timeout: int = Field(default=30, ge=1, le=300, description="Request timeout in seconds")
     supabase_max_retries: int = Field(default=3, ge=0, le=10, description="Maximum retry attempts")
@@ -43,12 +44,6 @@ class Config(BaseSettings):
     )
     
     def __init__(self, _env_file=None, **kwargs):
-        # Handle SUPABASE_KEY fallback
-        if "supabase_key" not in kwargs:
-            supabase_key = os.getenv("SUPABASE_SERVICE_KEY") or os.getenv("SUPABASE_KEY")
-            if supabase_key:
-                kwargs["supabase_key"] = supabase_key
-        
         # Allow disabling env file loading for tests
         if _env_file is not None:
             super().__init__(_env_file=_env_file, **kwargs)
@@ -152,6 +147,8 @@ class Config(BaseSettings):
         
         print(f"\n🔗 Supabase:")
         print(f"  URL: {self.supabase_url}")
+        print(f"  Anon Key: {self.supabase_anon_key[:20]}...")
+        print(f"  Service Key: {self.supabase_service_key[:20]}...")
         print(f"  Table: {self.supabase_table}")
         print(f"  Timeout: {self.supabase_timeout}s")
         print(f"  Max Retries: {self.supabase_max_retries}")
@@ -203,7 +200,8 @@ def get_supabase_config():
     class SupabaseConfig:
         def __init__(self):
             self.url = config.supabase_url
-            self.service_key = config.supabase_key
+            self.anon_key = config.supabase_anon_key
+            self.service_key = config.supabase_service_key
             self.table_name = config.supabase_table
             self.timeout = config.supabase_timeout
             self.max_retries = config.supabase_max_retries
@@ -228,7 +226,8 @@ def get_ollama_config():
 # Test helper functions
 def create_test_supabase_config(
     url: str = "https://test.supabase.co",
-    service_key: str = "test-key",
+    anon_key: str = "test-anon-key",
+    service_key: str = "test-service-key",
     table_name: str = "test_documents",
     timeout: int = 30,
     max_retries: int = 3
@@ -237,6 +236,7 @@ def create_test_supabase_config(
     class SupabaseConfig:
         def __init__(self):
             self.url = url
+            self.anon_key = anon_key
             self.service_key = service_key
             self.table_name = table_name
             self.timeout = timeout
