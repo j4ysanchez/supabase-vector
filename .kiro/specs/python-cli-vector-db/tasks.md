@@ -1,6 +1,6 @@
 # Implementation Plan
 
-- [ ] 1. Set up Supabase database and validate vector storage
+- [x] 1. Set up Supabase database and validate vector storage
   - [x] 1.1 Create Supabase database schema with vector support
     - Write SQL migration scripts for documents table with vector column
     - Add proper indexes for vector similarity search (ivfflat)
@@ -27,7 +27,7 @@
     - _Requirements: 1.3, 4.2_
 
 - [ ] 2. Set up Ollama embedding service and validate integration
-  - [ ] 2.1 Create EmbeddingPort interface and Ollama adapter
+  - [x] 2.1 Create EmbeddingPort interface and Ollama adapter
     - Define EmbeddingPort interface for embedding generation
     - Implement OllamaEmbeddingAdapter using httpx for async HTTP calls
     - Add proper error handling for network failures and API errors

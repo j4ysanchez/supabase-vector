@@ -26,4 +26,7 @@ class ProcessingError(DomainError):
 
 class EmbeddingError(DomainError):
     """Exception raised for embedding generation errors."""
-    pass
+    
+    def __init__(self, message: str, original_error: Exception = None):
+        super().__init__(message)
+        self.original_error = original_error
