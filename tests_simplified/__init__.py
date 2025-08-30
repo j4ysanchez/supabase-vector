@@ -1,0 +1,1 @@
+"""Simplified tests for the vector database."""
