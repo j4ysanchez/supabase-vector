@@ -33,7 +33,7 @@
     - Add proper error handling for network failures and API errors
     - _Requirements: 1.2, 2.1, 4.1, 4.3_
 
-  - [ ] 2.2 Write integration tests for Ollama embedding generation
+  - [x] 2.2 Write integration tests for Ollama embedding generation
     - Test connection to Ollama service and model availability
     - Verify embedding generation produces expected vector dimensions
     - Test batch processing for multiple text inputs

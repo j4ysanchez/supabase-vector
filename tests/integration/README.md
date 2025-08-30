@@ -1,8 +1,130 @@
-# Integration Tests for Supabase Vector Storage
+# Integration Tests
 
-This directory contains comprehensive integration tests for the Supabase vector storage functionality. These tests verify that the storage adapter works correctly with the database schema and handles various scenarios including error conditions.
+This directory contains comprehensive integration tests for both Supabase vector storage and Ollama embedding generation functionality. These tests verify that the adapters work correctly with their respective services and handle various scenarios including error conditions.
 
-## Test Coverage
+## Test Files
+
+- `test_storage_integration.py` - Supabase vector storage integration tests
+- `test_ollama_integration.py` - Ollama embedding generation integration tests  
+- `test_live_supabase_integration.py` - Live Supabase integration tests (requires actual database)
+
+## Ollama Integration Tests
+
+The Ollama integration tests (`test_ollama_integration.py`) provide comprehensive coverage for the Ollama embedding adapter, fulfilling the requirements specified in task 2.2.
+
+### Ollama Test Coverage
+
+#### 1. Service Connection and Model Availability
+
+**Test**: `test_service_connection_and_model_availability`
+- Verifies connection to Ollama service via health check
+- Confirms required model (nomic-embed-text) is available
+- Tests proper API response parsing for model listing
+
+**Test**: `test_service_connection_model_not_available`
+- Tests health check when required model is not available
+- Verifies proper handling when model list doesn't include required model
+
+**Test**: `test_service_connection_failure`
+- Tests health check when Ollama service is completely unavailable
+- Verifies graceful handling of connection errors
+
+**Test**: `test_service_http_error_response`
+- Tests health check with various HTTP error responses (404, 500, etc.)
+- Verifies proper error handling for API failures
+
+#### 2. Embedding Generation and Vector Dimensions
+
+**Test**: `test_single_text_embedding_generation`
+- Tests embedding generation for single text input
+- Verifies embedding produces expected 768 dimensions (nomic-embed-text)
+- Confirms embedding values are properly formatted as float lists
+
+**Test**: `test_multiple_text_embedding_generation`
+- Tests embedding generation for multiple text inputs
+- Verifies each text produces correct dimensional embeddings
+- Tests that different texts produce different embeddings
+
+**Test**: `test_empty_text_list_handling`
+- Tests proper handling of empty input lists
+- Verifies no API calls are made for empty inputs
+
+**Test**: `test_unexpected_embedding_dimension`
+- Tests adapter behavior when model returns unexpected dimensions
+- Verifies adapter adapts to actual embedding dimensions dynamically
+
+#### 3. Batch Processing for Multiple Text Inputs
+
+**Test**: `test_batch_processing_within_limit`
+- Tests batch processing when all texts fit within configured batch size
+- Verifies proper sequencing of API calls for batch processing
+
+**Test**: `test_batch_processing_exceeds_limit`
+- Tests batch processing when input exceeds configured batch size
+- Verifies proper batching and sequencing across multiple API calls
+
+**Test**: `test_large_batch_processing`
+- Tests efficient processing of large batches (20+ texts)
+- Verifies performance and proper handling of extended processing
+
+#### 4. Error Scenarios (Service Unavailable, Invalid Model)
+
+**Test**: `test_service_unavailable_error`
+- Tests handling when Ollama service is completely unavailable
+- Verifies proper EmbeddingError propagation with original error context
+- Tests retry mechanism behavior with persistent failures
+
+**Test**: `test_http_error_responses`
+- Tests handling of various HTTP error responses (404, 500, etc.)
+- Verifies proper error message formatting and context preservation
+
+**Test**: `test_invalid_response_format`
+- Tests handling of malformed API responses (missing 'embedding' field)
+- Verifies proper error detection and reporting
+
+**Test**: `test_invalid_embedding_format`
+- Tests handling of invalid embedding formats (non-list, wrong types)
+- Verifies proper validation and error reporting
+
+**Test**: `test_empty_embedding_response`
+- Tests handling of empty embedding arrays in responses
+- Verifies proper validation of embedding content
+
+**Test**: `test_retry_mechanism_with_transient_errors`
+- Tests retry mechanism with transient network errors
+- Verifies exponential backoff and eventual success after retries
+
+**Test**: `test_retry_exhaustion`
+- Tests behavior when all retry attempts are exhausted
+- Verifies proper error reporting after maximum retries
+
+**Test**: `test_timeout_error_handling`
+- Tests handling of request timeout errors
+- Verifies proper timeout error classification and reporting
+
+#### 5. Configuration and Initialization
+
+**Test**: `test_adapter_initialization_with_valid_config`
+- Tests proper adapter initialization with valid configuration
+- Verifies all configuration parameters are properly set
+
+**Test**: `test_adapter_with_custom_client`
+- Tests adapter initialization with custom HTTP client
+- Verifies proper client injection and usage
+
+**Test**: `test_config_validation_missing_base_url`
+- Tests configuration validation with missing required fields
+- Verifies proper ConfigValidationError raising
+
+**Test**: `test_config_validation_invalid_url_format`
+- Tests configuration validation with invalid URL formats
+- Verifies proper URL format validation
+
+**Test**: `test_config_validation_invalid_numeric_values`
+- Tests configuration validation with invalid numeric parameters
+- Verifies proper numeric validation and error reporting
+
+## Supabase Storage Test Coverage
 
 ### 1. Database Connection and Table Structure Verification
 
@@ -150,6 +272,35 @@ The tests provide detailed output including:
 - Coverage of all major code paths
 
 ## Requirements Verification
+
+### Ollama Integration Tests (Task 2.2)
+
+These integration tests fulfill the requirements specified in task 2.2:
+
+✅ **Test connection to Ollama service and model availability**
+- `TestOllamaServiceConnection` class with comprehensive connection tests
+- Health check validation with model availability verification
+- Error handling for service unavailability and HTTP errors
+
+✅ **Verify embedding generation produces expected vector dimensions**
+- `TestEmbeddingGeneration` class with dimension validation tests
+- Verification of 768-dimensional embeddings for nomic-embed-text
+- Dynamic adaptation to unexpected embedding dimensions
+
+✅ **Test batch processing for multiple text inputs**
+- `TestBatchProcessing` class with comprehensive batch processing tests
+- Tests for within-limit, exceeding-limit, and large batch scenarios
+- Verification of proper API call sequencing and efficiency
+
+✅ **Add tests for error scenarios (service unavailable, invalid model)**
+- `TestErrorScenarios` class with extensive error handling tests
+- Service unavailability, HTTP errors, invalid responses, timeouts
+- Retry mechanism testing with transient and persistent errors
+- Configuration validation and initialization error testing
+
+The tests cover Requirements 1.2 (embedding generation), 4.1 (error handling), and 4.3 (service integration) as specified in the task details.
+
+### Supabase Storage Integration Tests (Task 1.4)
 
 These integration tests fulfill the requirements specified in task 1.4:
 
