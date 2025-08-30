@@ -18,7 +18,7 @@ class StorageClient:
         """Initialize with configuration."""
         config = get_config()
         self.url = config.supabase_url
-        self.key = config.supabase_key
+        self.key = config.supabase_anon_key  # Use anon key for client operations
         self.table = config.supabase_table
         self.timeout = config.supabase_timeout
         self.max_retries = config.supabase_max_retries

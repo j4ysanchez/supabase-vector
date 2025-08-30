@@ -124,7 +124,7 @@ class TestCLI:
             assert "🔍 Found" in result.output
             assert "documents matching" in result.output
             assert "doc1.txt" in result.output
-            mock_vector_db.search_by_text.assert_called_once_with('test query', 5)
+            mock_vector_db.search_by_text.assert_called_once_with('test query', limit=5)
     
     def test_search_command_no_results(self, runner, mock_vector_db):
         """Test search command with no results."""
@@ -142,7 +142,7 @@ class TestCLI:
             result = runner.invoke(cli, ['search', 'test', '--limit', '10'])
             
             assert result.exit_code == 0
-            mock_vector_db.search_by_text.assert_called_once_with('test', 10)
+            mock_vector_db.search_by_text.assert_called_once_with('test', limit=10)
     
     def test_list_command_success(self, runner, mock_vector_db):
         """Test successful list command."""

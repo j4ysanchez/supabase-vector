@@ -15,7 +15,8 @@ class ConfigModel(BaseSettings):
     
     # Supabase Configuration
     supabase_url: str = Field(..., description="Supabase project URL")
-    supabase_key: str = Field(..., description="Supabase service role key")
+    supabase_anon_key: str = Field(..., description="Supabase anonymous key")
+    supabase_service_key: str = Field(..., description="Supabase service role key")
     supabase_table: str = Field(default="documents", description="Table name for document storage")
     supabase_timeout: int = Field(default=30, ge=1, le=300, description="Request timeout in seconds")
     supabase_max_retries: int = Field(default=3, ge=0, le=10, description="Maximum retry attempts")
@@ -36,6 +37,12 @@ class ConfigModel(BaseSettings):
     # Logging Configuration
     log_level: str = Field(default="INFO", description="Logging level")
     log_file: Optional[str] = Field(default=None, description="Optional log file path")
+    
+    model_config = SettingsConfigDict(
+        env_file=None,  # Don't read from any env file
+        case_sensitive=False,
+        extra="ignore",
+    )
     
     model_config = SettingsConfigDict(
         # Don't read from environment or files for tests
@@ -85,12 +92,13 @@ class TestSimplifiedConfig:
         """Test configuration with only required environment variables."""
         config = ConfigModel(
             supabase_url="https://test.supabase.co",
-            supabase_key="test-key-123"
+            supabase_anon_key="test-key-123",
+            supabase_service_key="test-service-key-123"
         )
         
         # Required fields
         assert config.supabase_url == "https://test.supabase.co"
-        assert config.supabase_key == "test-key-123"
+        assert config.supabase_anon_key == "test-key-123"
         
         # Defaults
         assert config.supabase_table == "documents"
@@ -103,7 +111,8 @@ class TestSimplifiedConfig:
         """Test configuration with custom values."""
         config = ConfigModel(
             supabase_url="https://custom.supabase.co",
-            supabase_key="custom-service-key",
+            supabase_anon_key="custom-service-key",
+            supabase_service_key="custom-service-key-2",
             supabase_table="custom_docs",
             supabase_timeout=45,
             ollama_url="http://custom-ollama:11434",
@@ -114,7 +123,7 @@ class TestSimplifiedConfig:
         )
         
         assert config.supabase_url == "https://custom.supabase.co"
-        assert config.supabase_key == "custom-service-key"
+        assert config.supabase_anon_key == "custom-service-key"
         assert config.supabase_table == "custom_docs"
         assert config.supabase_timeout == 45
         assert config.ollama_url == "http://custom-ollama:11434"
@@ -141,7 +150,7 @@ class TestSimplifiedConfig:
                 with pytest.raises(ValidationError) as exc_info:
                     Config(_env_file=temp_file.name)
                 assert "supabase_url" in str(exc_info.value)
-                assert "supabase_key" in str(exc_info.value)
+                assert "SUPABASE_KEY" in str(exc_info.value)
                 
                 # Invalid URL format
                 with pytest.raises(ValidationError) as exc_info:
@@ -158,7 +167,8 @@ class TestSimplifiedConfig:
         with pytest.raises(ValidationError) as exc_info:
             ConfigModel(
                 supabase_url="https://test.supabase.co",
-                supabase_key="test-key",
+                supabase_anon_key="test-key",
+                supabase_service_key='test-service-key',
                 chunk_size=1000,
                 chunk_overlap=1500  # Greater than chunk size
             )
@@ -177,7 +187,8 @@ class TestSimplifiedConfig:
         """Test that URLs are properly normalized."""
         config = ConfigModel(
             supabase_url="https://test.supabase.co/",  # Trailing slash
-            supabase_key="test-key",
+            supabase_anon_key="test-key",
+            supabase_service_key="test-service-key",
             ollama_url="http://localhost:11434/"  # Trailing slash
         )
         
@@ -189,7 +200,8 @@ class TestSimplifiedConfig:
         """Test file extensions parsing and normalization."""
         config = ConfigModel(
             supabase_url="https://test.supabase.co",
-            supabase_key="test-key",
+            supabase_anon_key="test-key",
+            supabase_service_key="test-service-key",
             supported_extensions="txt,md,py"
         )
         
@@ -200,7 +212,8 @@ class TestSimplifiedConfig:
         """Test computed properties work correctly."""
         config = ConfigModel(
             supabase_url="https://test.supabase.co",
-            supabase_key="test-key",
+            supabase_anon_key="test-key",
+            supabase_service_key="test-service-key",
             max_file_size_mb=50
         )
         
@@ -212,22 +225,28 @@ class TestSimplifiedConfig:
         # Test that the real Config class can be instantiated
         # This tests the actual production code
         config = Config(
+            _env_file=None,  # Don't read from env file
             supabase_url="https://test.supabase.co",
-            supabase_key="test-key"
+            SUPABASE_KEY="test-anon-key",
+            SUPABASE_SERVICE_KEY="test-service-key"
         )
         
         assert config.supabase_url == "https://test.supabase.co"
-        assert config.supabase_key == "test-key"
+        assert config.supabase_anon_key == "test-anon-key"
+        assert config.supabase_service_key == "test-service-key"
     
     def test_global_config_instance(self):
         """Test that we can create config instances."""
         # Simple test that config can be created
+        # Use ConfigModel which doesn't read from environment
         config = ConfigModel(
             supabase_url="https://test.supabase.co",
-            supabase_key="test-key"
+            supabase_anon_key="test-anon-key",
+            supabase_service_key="test-service-key"
         )
         assert config.supabase_url == "https://test.supabase.co"
-        assert config.supabase_key == "test-key"
+        assert config.supabase_anon_key == "test-anon-key"
+        assert config.supabase_service_key == "test-service-key"
     
     def test_config_summary_output(self, capsys):
         """Test configuration summary output."""

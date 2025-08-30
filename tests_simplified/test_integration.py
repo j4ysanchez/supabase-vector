@@ -45,7 +45,7 @@ class TestVectorDBIntegration:
         
         # Verify required configuration exists
         assert config.supabase_url is not None
-        assert config.supabase_key is not None
+        assert config.supabase_anon_key is not None
         assert config.ollama_url is not None
         assert config.ollama_model is not None
         

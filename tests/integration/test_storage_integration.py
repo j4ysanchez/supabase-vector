@@ -529,14 +529,16 @@ class TestSupabaseVectorStorageIntegration:
                     Config(
                         _env_file=temp_file.name,
                         supabase_url="invalid-url",  # Invalid URL format
-                        supabase_key="valid-key"
+                        SUPABASE_KEY="valid-anon-key",
+                        SUPABASE_SERVICE_KEY="valid-service-key"
                     )
                 
                 # Test that valid config works
                 valid_config = Config(
                     _env_file=temp_file.name,
                     supabase_url="https://valid-project.supabase.co",
-                    supabase_key="valid-key"
+                    SUPABASE_KEY="valid-anon-key",
+                    SUPABASE_SERVICE_KEY="valid-service-key"
                 )
                 assert valid_config.supabase_url == "https://valid-project.supabase.co"
         finally:
@@ -549,13 +551,14 @@ class TestSupabaseVectorStorageIntegration:
         # Mock environment variables
         test_env = {
             "SUPABASE_URL": "https://env-test.supabase.co",
-            "SUPABASE_SERVICE_KEY": "env-test-key",
+            "SUPABASE_KEY": "env-test-key",
+            "SUPABASE_SERVICE_KEY": "env-test-service-key",
             "SUPABASE_TABLE_NAME": "env_test_documents",
             "SUPABASE_TIMEOUT": "45",
             "SUPABASE_MAX_RETRIES": "5"
         }
         
-        with patch.dict(os.environ, test_env):
+        with patch.dict(os.environ, test_env, clear=True):
             from src.config import Config
             import tempfile
             
@@ -568,7 +571,7 @@ class TestSupabaseVectorStorageIntegration:
                 config = Config(_env_file=temp_file.name)
                 
                 assert config.supabase_url == "https://env-test.supabase.co"
-                assert config.supabase_key == "env-test-key"
+                assert config.supabase_anon_key == "env-test-key"
                 assert config.supabase_table == "env_test_documents"
                 assert config.supabase_timeout == 45
                 assert config.supabase_max_retries == 5

@@ -21,7 +21,7 @@ def cli(verbose):
 @cli.command()
 @click.argument('file_path', type=click.Path(exists=True, path_type=Path))
 def ingest(file_path: Path):
-    """Ingest a single file into the vector database.
+    """Ingest documents into the vector database.
     
     Example:
         vector-db ingest document.txt
@@ -70,14 +70,14 @@ def ingest_dir(dir_path: Path, recursive: bool):
 @click.argument('query')
 @click.option('--limit', '-l', default=5, help='Number of results to return')
 def search(query: str, limit: int):
-    """Search for documents by text content.
+    """Search documents by text content.
     
     Example:
         vector-db search "machine learning" --limit 10
     """
     try:
         db = VectorDB()
-        results = db.search_by_text(query, limit)
+        results = db.search_by_text(query, limit=limit)
         
         if not results:
             click.echo(f"🔍 No documents found matching '{query}'")

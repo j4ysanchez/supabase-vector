@@ -18,7 +18,7 @@ class TestSimplifiedConfig:
         
         # Verify required fields exist
         assert hasattr(config, 'supabase_url')
-        assert hasattr(config, 'supabase_key')
+        assert hasattr(config, 'supabase_anon_key')
         assert hasattr(config, 'ollama_url')
         assert hasattr(config, 'ollama_model')
         
@@ -71,7 +71,7 @@ class TestSimplifiedConfig:
             config = Config()
             
             assert config.supabase_url == "https://env-test.supabase.co"
-            assert config.supabase_key == "env-test-key"
+            assert config.supabase_anon_key == "env-test-key"
             assert config.ollama_model == "custom-model"
             assert config.chunk_size == 2000
     
