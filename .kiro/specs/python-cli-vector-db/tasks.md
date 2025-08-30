@@ -40,7 +40,7 @@
     - Add tests for error scenarios (service unavailable, invalid model)
     - _Requirements: 1.2, 4.1, 4.3_
 
-  - [ ] 2.3 Create end-to-end test for embedding storage workflow
+  - [x] 2.3 Create end-to-end test for embedding storage workflow
     - Test complete flow: text → embedding → Supabase storage
     - Verify stored embeddings can be retrieved and used for similarity search
     - Test with various text sizes and content types
