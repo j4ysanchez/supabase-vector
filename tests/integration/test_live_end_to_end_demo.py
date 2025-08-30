@@ -25,8 +25,7 @@ from datetime import datetime
 from src.adapters.secondary.ollama.ollama_embedding_adapter import OllamaEmbeddingAdapter
 from src.adapters.secondary.supabase.supabase_storage_adapter import SupabaseStorageAdapter
 from src.domain.models.document import Document, DocumentChunk
-from src.infrastructure.config.ollama_config import OllamaConfig
-from src.infrastructure.config.supabase_config import SupabaseConfig
+from src.config import get_ollama_config, get_supabase_config
 from src.domain.exceptions import EmbeddingError, StorageError
 from tests.mocks.mock_supabase_client import MockSupabaseClient
 
@@ -126,14 +125,16 @@ class TestLiveEndToEndWorkflowDemo:
         """Test with real Ollama and Supabase services."""
         
         # Configure live services
-        ollama_config = OllamaConfig(
+        from src.config import create_test_ollama_config, create_test_supabase_config
+        
+        ollama_config = create_test_ollama_config(
             base_url=os.getenv("OLLAMA_BASE_URL"),
             model_name=os.getenv("OLLAMA_MODEL_NAME", "nomic-embed-text"),
             timeout=30,
             max_retries=2
         )
         
-        supabase_config = SupabaseConfig(
+        supabase_config = create_test_supabase_config(
             url=os.getenv("SUPABASE_URL"),
             service_key=os.getenv("SUPABASE_SERVICE_KEY") or os.getenv("SUPABASE_KEY"),
             table_name=os.getenv("SUPABASE_TABLE_NAME", "documents")

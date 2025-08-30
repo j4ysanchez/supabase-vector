@@ -17,7 +17,7 @@ from datetime import datetime, timezone
 from src.adapters.secondary.supabase.supabase_storage_adapter import SupabaseStorageAdapter
 from src.domain.models.document import Document, DocumentChunk
 from src.domain.exceptions import StorageError
-from src.infrastructure.config.supabase_config import SupabaseConfig
+from src.config import get_supabase_config
 
 
 class LiveSupabaseStorageAdapter(SupabaseStorageAdapter):

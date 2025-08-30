@@ -22,15 +22,11 @@ async def comprehensive_integration_test():
     
     # Import required modules
     from tests.integration.test_live_supabase_integration import LiveSupabaseStorageAdapter
-    from src.infrastructure.config.supabase_config import SupabaseConfig
+    from src.config import get_supabase_config
     from src.domain.models.document import Document, DocumentChunk
     
     # Create configuration
-    config = SupabaseConfig(
-        url=os.getenv("SUPABASE_URL"),
-        service_key=os.getenv("SUPABASE_SERVICE_KEY") or os.getenv("SUPABASE_KEY"),
-        table_name=os.getenv("SUPABASE_TABLE_NAME", "documents")
-    )
+    config = get_supabase_config()
     
     adapter = LiveSupabaseStorageAdapter(config)
     

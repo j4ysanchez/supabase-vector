@@ -5,16 +5,14 @@ from unittest.mock import AsyncMock, Mock
 import httpx
 
 from src.adapters.secondary.ollama.ollama_embedding_adapter import OllamaEmbeddingAdapter
-from src.infrastructure.config.ollama_config import OllamaConfig
+from src.config import create_test_ollama_config
 from src.domain.exceptions import EmbeddingError
 
 
 @pytest.fixture
 def ollama_config():
     """Create a test Ollama configuration."""
-    return OllamaConfig(
-        base_url="http://localhost:11434",
-        model_name="nomic-embed-text",
+    return create_test_ollama_config(
         timeout=30,
         max_retries=2,
         batch_size=2

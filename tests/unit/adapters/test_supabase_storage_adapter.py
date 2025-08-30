@@ -7,7 +7,7 @@ from uuid import uuid4
 from src.adapters.secondary.supabase.supabase_storage_adapter import SupabaseStorageAdapter
 from src.domain.exceptions import StorageError
 from src.domain.models.document import Document, DocumentChunk
-from src.infrastructure.config.supabase_config import SupabaseConfig
+from src.config import create_test_supabase_config
 
 
 class TestSupabaseStorageAdapter:
@@ -16,13 +16,7 @@ class TestSupabaseStorageAdapter:
     @pytest.fixture
     def config(self):
         """Create a test configuration."""
-        return SupabaseConfig(
-            url="https://test.supabase.co",
-            service_key="test-key",
-            table_name="test_documents",
-            timeout=30,
-            max_retries=3
-        )
+        return create_test_supabase_config()
     
     @pytest.fixture
     def adapter(self, config):

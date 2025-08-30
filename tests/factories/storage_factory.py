@@ -5,8 +5,9 @@ This module provides factory functions to create storage adapters
 with appropriate mocking for different testing scenarios.
 """
 
+from typing import Any
 from src.adapters.secondary.supabase.supabase_storage_adapter import SupabaseStorageAdapter
-from src.infrastructure.config.supabase_config import SupabaseConfig
+from src.config import create_test_supabase_config
 from tests.mocks.mock_supabase_client import MockSupabaseClient
 
 
@@ -25,12 +26,10 @@ def create_mock_storage_adapter(
     Returns:
         SupabaseStorageAdapter: Adapter configured with mock client
     """
-    config = SupabaseConfig(
+    config = create_test_supabase_config(
         url=url,
         service_key=service_key,
-        table_name=table_name,
-        timeout=30,
-        max_retries=3
+        table_name=table_name
     )
     
     adapter = SupabaseStorageAdapter(config)
@@ -40,7 +39,7 @@ def create_mock_storage_adapter(
     return adapter
 
 
-def create_live_storage_adapter(config: SupabaseConfig) -> SupabaseStorageAdapter:
+def create_live_storage_adapter(config: Any) -> SupabaseStorageAdapter:
     """Create a storage adapter for live testing.
     
     Args:

@@ -11,8 +11,7 @@ from src.adapters.secondary.supabase.supabase_storage_adapter import SupabaseSto
 from tests.mocks.mock_supabase_client import MockSupabaseClient
 from src.domain.models.document import Document, DocumentChunk
 from src.domain.exceptions import StorageError
-from src.infrastructure.config.supabase_config import SupabaseConfig
-from src.infrastructure.config.config_validation import ConfigValidationError
+from src.config import create_test_supabase_config
 
 
 class TestSupabaseVectorStorageIntegration:
@@ -21,12 +20,10 @@ class TestSupabaseVectorStorageIntegration:
     @pytest.fixture
     def test_config(self):
         """Create a test configuration for Supabase."""
-        return SupabaseConfig(
+        return create_test_supabase_config(
             url="https://test-project.supabase.co",
             service_key="test-service-key-12345",
-            table_name="test_documents",
-            timeout=30,
-            max_retries=3
+            table_name="test_documents"
         )
     
     @pytest.fixture
@@ -358,7 +355,7 @@ class TestSupabaseVectorStorageIntegration:
         """Test error scenarios for connection failures."""
         
         # Test with invalid URL
-        invalid_config = SupabaseConfig(
+        invalid_config = create_test_supabase_config(
             url="https://invalid-url-that-does-not-exist.supabase.co",
             service_key="invalid-key",
             table_name="documents"
@@ -506,29 +503,44 @@ class TestSupabaseVectorStorageIntegration:
         """Test configuration validation for various scenarios."""
         
         # Test valid configuration
-        valid_config = SupabaseConfig(
+        valid_config = create_test_supabase_config(
             url="https://valid-project.supabase.co",
             service_key="valid-service-key",
             table_name="documents"
         )
-        valid_config.validate()  # Should not raise
+        # Valid config should work fine
+        assert valid_config.url == "https://valid-project.supabase.co"
         
-        # Test invalid configurations
-        with pytest.raises(ConfigValidationError):
-            invalid_config = SupabaseConfig(
-                url="",  # Empty URL
-                service_key="valid-key",
-                table_name="documents"
-            )
-            invalid_config.validate()
+        # Test invalid configurations - these should fail at creation time
+        # Note: The new config system validates automatically, so we test the underlying Config class
+        from src.config import Config
+        from pydantic import ValidationError
+        import tempfile
+        import os
         
-        with pytest.raises(ConfigValidationError):
-            invalid_config = SupabaseConfig(
-                url="https://valid-project.supabase.co",
-                service_key="",  # Empty service key
-                table_name="documents"
-            )
-            invalid_config.validate()
+        temp_file = tempfile.NamedTemporaryFile(mode='w', suffix='.env', delete=False)
+        temp_file.write('')
+        temp_file.close()
+        
+        try:
+            from unittest.mock import patch
+            with patch.dict(os.environ, {}, clear=True):
+                with pytest.raises(ValidationError):
+                    Config(
+                        _env_file=temp_file.name,
+                        supabase_url="invalid-url",  # Invalid URL format
+                        supabase_key="valid-key"
+                    )
+                
+                # Test that valid config works
+                valid_config = Config(
+                    _env_file=temp_file.name,
+                    supabase_url="https://valid-project.supabase.co",
+                    supabase_key="valid-key"
+                )
+                assert valid_config.supabase_url == "https://valid-project.supabase.co"
+        finally:
+            os.unlink(temp_file.name)
     
     @pytest.mark.asyncio
     async def test_environment_configuration_loading(self):
@@ -544,18 +556,37 @@ class TestSupabaseVectorStorageIntegration:
         }
         
         with patch.dict(os.environ, test_env):
-            config = SupabaseConfig.from_env()
+            from src.config import Config
+            import tempfile
             
-            assert config.url == "https://env-test.supabase.co"
-            assert config.service_key == "env-test-key"
-            assert config.table_name == "env_test_documents"
-            assert config.timeout == 45
-            assert config.max_retries == 5
+            # Create empty env file to prevent reading from project .env
+            temp_file = tempfile.NamedTemporaryFile(mode='w', suffix='.env', delete=False)
+            temp_file.write('')
+            temp_file.close()
+            
+            try:
+                config = Config(_env_file=temp_file.name)
+                
+                assert config.supabase_url == "https://env-test.supabase.co"
+                assert config.supabase_key == "env-test-key"
+                assert config.supabase_table == "env_test_documents"
+                assert config.supabase_timeout == 45
+                assert config.supabase_max_retries == 5
+            finally:
+                os.unlink(temp_file.name)
         
         # Test missing required environment variables
-        with patch.dict(os.environ, {}, clear=True):
-            with pytest.raises(ConfigValidationError):
-                SupabaseConfig.from_env()
+        from pydantic import ValidationError
+        temp_file = tempfile.NamedTemporaryFile(mode='w', suffix='.env', delete=False)
+        temp_file.write('')
+        temp_file.close()
+        
+        try:
+            with patch.dict(os.environ, {}, clear=True):
+                with pytest.raises(ValidationError):
+                    Config(_env_file=temp_file.name)
+        finally:
+            os.unlink(temp_file.name)
 
 
 class TestSupabaseStorageAdapterUnit:
@@ -564,7 +595,7 @@ class TestSupabaseStorageAdapterUnit:
     @pytest.fixture
     def mock_config(self):
         """Create a mock configuration."""
-        return SupabaseConfig(
+        return create_test_supabase_config(
             url="https://mock-test.supabase.co",
             service_key="mock-test-key",
             table_name="mock_documents"

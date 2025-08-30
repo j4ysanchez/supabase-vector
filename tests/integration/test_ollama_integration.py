@@ -7,17 +7,14 @@ from unittest.mock import Mock, AsyncMock
 from typing import List, Dict, Any
 
 from src.adapters.secondary.ollama.ollama_embedding_adapter import OllamaEmbeddingAdapter
-from src.infrastructure.config.ollama_config import OllamaConfig
-from src.infrastructure.config.config_validation import ConfigValidationError
+from src.config import create_test_ollama_config
 from src.domain.exceptions import EmbeddingError
 
 
 @pytest.fixture
 def ollama_config():
     """Create a test Ollama configuration."""
-    return OllamaConfig(
-        base_url="http://localhost:11434",
-        model_name="nomic-embed-text",
+    return create_test_ollama_config(
         timeout=30,
         max_retries=1,
         batch_size=2
@@ -27,9 +24,7 @@ def ollama_config():
 @pytest.fixture
 def ollama_config_with_retries():
     """Create a test Ollama configuration with multiple retries."""
-    return OllamaConfig(
-        base_url="http://localhost:11434",
-        model_name="nomic-embed-text",
+    return create_test_ollama_config(
         timeout=30,
         max_retries=3,
         batch_size=5
@@ -554,14 +549,17 @@ class TestConfigurationAndInitialization:
     
     def test_config_validation_missing_base_url(self, monkeypatch):
         """Test configuration validation with missing base URL."""
-        # Arrange - Clear any existing OLLAMA_BASE_URL
+        # Arrange - Clear any existing OLLAMA_BASE_URL and set invalid URL
         monkeypatch.delenv("OLLAMA_BASE_URL", raising=False)
+        monkeypatch.setenv("OLLAMA_BASE_URL", "")
         
         # Act & Assert
-        with pytest.raises(ConfigValidationError) as exc_info:
-            OllamaConfig.from_env()
+        from pydantic import ValidationError
+        from src.config import Config
+        with pytest.raises(ValidationError) as exc_info:
+            Config(ollama_url="")
         
-        assert "OLLAMA_BASE_URL environment variable is required" in str(exc_info.value)
+        assert "Ollama URL must start with http:// or https://" in str(exc_info.value)
     
     def test_config_validation_invalid_url_format(self, monkeypatch):
         """Test configuration validation with invalid URL format."""
@@ -569,10 +567,12 @@ class TestConfigurationAndInitialization:
         monkeypatch.setenv("OLLAMA_BASE_URL", "invalid-url")
         
         # Act & Assert
-        with pytest.raises(ConfigValidationError) as exc_info:
-            OllamaConfig.from_env()
+        from pydantic import ValidationError
+        from src.config import Config
+        with pytest.raises(ValidationError) as exc_info:
+            Config(ollama_url="invalid-url")
         
-        assert "must be a valid HTTP/HTTPS URL" in str(exc_info.value)
+        assert "Ollama URL must start with http:// or https://" in str(exc_info.value)
     
     def test_config_validation_invalid_numeric_values(self, monkeypatch):
         """Test configuration validation with invalid numeric values."""
@@ -581,7 +581,9 @@ class TestConfigurationAndInitialization:
         monkeypatch.setenv("OLLAMA_TIMEOUT", "invalid")
         
         # Act & Assert
-        with pytest.raises(ConfigValidationError) as exc_info:
-            OllamaConfig.from_env()
+        from pydantic import ValidationError
+        from src.config import Config
+        with pytest.raises(ValidationError) as exc_info:
+            Config(ollama_timeout="invalid")
         
-        assert "Invalid numeric configuration value" in str(exc_info.value)
+        assert "Input should be a valid integer" in str(exc_info.value)

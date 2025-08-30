@@ -38,7 +38,7 @@ The `retry_utils.py` module provides a decorator for adding retry logic with exp
 
 ```python
 from src.adapters.secondary.supabase import SupabaseStorageAdapter
-from src.infrastructure.config.supabase_config import SupabaseConfig
+from src.config import get_supabase_config
 from src.domain.models import Document, DocumentChunk
 
 # Create configuration

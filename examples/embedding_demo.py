@@ -31,7 +31,7 @@ import sys
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from src.adapters.secondary.ollama.ollama_embedding_adapter import OllamaEmbeddingAdapter
-from src.infrastructure.config.ollama_config import OllamaConfig
+from src.config import get_ollama_config
 from src.domain.exceptions import EmbeddingError
 
 
@@ -50,7 +50,7 @@ async def main():
     try:
         # Load configuration from environment
         logger.info("Loading Ollama configuration...")
-        config = OllamaConfig.from_env()
+        config = get_ollama_config()
         logger.info(f"Using Ollama at: {config.base_url}")
         logger.info(f"Model: {config.model_name}")
         

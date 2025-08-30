@@ -10,7 +10,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 from src.config import Config, get_config, reload_config
 
 
-class TestConfig(BaseSettings):
+class ConfigModel(BaseSettings):
     """Test-only config that doesn't read from environment or files."""
     
     # Supabase Configuration
@@ -83,7 +83,7 @@ class TestSimplifiedConfig:
     
     def test_config_with_minimal_env_vars(self):
         """Test configuration with only required environment variables."""
-        config = TestConfig(
+        config = ConfigModel(
             supabase_url="https://test.supabase.co",
             supabase_key="test-key-123"
         )
@@ -101,7 +101,7 @@ class TestSimplifiedConfig:
     
     def test_config_with_custom_values(self):
         """Test configuration with custom values."""
-        config = TestConfig(
+        config = ConfigModel(
             supabase_url="https://custom.supabase.co",
             supabase_key="custom-service-key",
             supabase_table="custom_docs",
@@ -125,23 +125,38 @@ class TestSimplifiedConfig:
     
     def test_config_validation_errors(self):
         """Test configuration validation catches invalid values."""
-        # Missing required fields
-        with pytest.raises(ValidationError) as exc_info:
-            TestConfig()
-        assert "supabase_url" in str(exc_info.value)
-        assert "supabase_key" in str(exc_info.value)
+        import tempfile
+        import os
+        from unittest.mock import patch
         
-        # Invalid URL format
-        with pytest.raises(ValidationError) as exc_info:
-            TestConfig(
-                supabase_url="invalid-url",
-                supabase_key="test-key"
-            )
-        assert "must start with http" in str(exc_info.value)
+        # Create empty temp file to prevent reading from .env
+        temp_file = tempfile.NamedTemporaryFile(mode='w', suffix='.env', delete=False)
+        temp_file.write('')
+        temp_file.close()
+        
+        try:
+            # Mock environment variables to be empty
+            with patch.dict(os.environ, {}, clear=True):
+                # Missing required fields
+                with pytest.raises(ValidationError) as exc_info:
+                    Config(_env_file=temp_file.name)
+                assert "supabase_url" in str(exc_info.value)
+                assert "supabase_key" in str(exc_info.value)
+                
+                # Invalid URL format
+                with pytest.raises(ValidationError) as exc_info:
+                    Config(
+                        _env_file=temp_file.name,
+                        supabase_url="invalid-url",
+                        supabase_key="test-key"
+                    )
+                assert "must start with http" in str(exc_info.value)
+        finally:
+            os.unlink(temp_file.name)
         
         # Invalid chunk overlap
         with pytest.raises(ValidationError) as exc_info:
-            TestConfig(
+            ConfigModel(
                 supabase_url="https://test.supabase.co",
                 supabase_key="test-key",
                 chunk_size=1000,
@@ -151,7 +166,7 @@ class TestSimplifiedConfig:
         
         # Invalid log level
         with pytest.raises(ValidationError) as exc_info:
-            TestConfig(
+            ConfigModel(
                 supabase_url="https://test.supabase.co",
                 supabase_key="test-key",
                 log_level="INVALID"
@@ -160,7 +175,7 @@ class TestSimplifiedConfig:
     
     def test_url_normalization(self):
         """Test that URLs are properly normalized."""
-        config = TestConfig(
+        config = ConfigModel(
             supabase_url="https://test.supabase.co/",  # Trailing slash
             supabase_key="test-key",
             ollama_url="http://localhost:11434/"  # Trailing slash
@@ -172,7 +187,7 @@ class TestSimplifiedConfig:
     
     def test_extensions_parsing(self):
         """Test file extensions parsing and normalization."""
-        config = TestConfig(
+        config = ConfigModel(
             supabase_url="https://test.supabase.co",
             supabase_key="test-key",
             supported_extensions="txt,md,py"
@@ -183,14 +198,14 @@ class TestSimplifiedConfig:
     
     def test_computed_properties(self):
         """Test computed properties work correctly."""
-        config = TestConfig(
+        config = ConfigModel(
             supabase_url="https://test.supabase.co",
             supabase_key="test-key",
             max_file_size_mb=50
         )
         
         assert config.max_file_size_mb == 50
-        # Note: computed properties would need to be added to TestConfig if needed
+        # Note: computed properties would need to be added to ConfigModel if needed
     
     def test_backward_compatibility_functions(self):
         """Test backward compatibility helper functions."""
@@ -207,7 +222,7 @@ class TestSimplifiedConfig:
     def test_global_config_instance(self):
         """Test that we can create config instances."""
         # Simple test that config can be created
-        config = TestConfig(
+        config = ConfigModel(
             supabase_url="https://test.supabase.co",
             supabase_key="test-key"
         )

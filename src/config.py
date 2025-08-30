@@ -224,3 +224,41 @@ def get_ollama_config():
             self.batch_size = config.ollama_batch_size
     
     return OllamaConfig()
+
+# Test helper functions
+def create_test_supabase_config(
+    url: str = "https://test.supabase.co",
+    service_key: str = "test-key",
+    table_name: str = "test_documents",
+    timeout: int = 30,
+    max_retries: int = 3
+):
+    """Create a test Supabase configuration object."""
+    class SupabaseConfig:
+        def __init__(self):
+            self.url = url
+            self.service_key = service_key
+            self.table_name = table_name
+            self.timeout = timeout
+            self.max_retries = max_retries
+    
+    return SupabaseConfig()
+
+
+def create_test_ollama_config(
+    base_url: str = "http://localhost:11434",
+    model_name: str = "nomic-embed-text",
+    timeout: int = 60,
+    max_retries: int = 3,
+    batch_size: int = 32
+):
+    """Create a test Ollama configuration object."""
+    class OllamaConfig:
+        def __init__(self):
+            self.base_url = base_url
+            self.model_name = model_name
+            self.timeout = timeout
+            self.max_retries = max_retries
+            self.batch_size = batch_size
+    
+    return OllamaConfig()

@@ -10,7 +10,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from src.adapters.secondary.supabase import SupabaseStorageAdapter
 from src.domain.models import Document, DocumentChunk
-from src.infrastructure.config.supabase_config import SupabaseConfig
+from src.config import get_supabase_config
 
 # Configure logging
 logging.basicConfig(
@@ -27,12 +27,7 @@ async def demonstrate_storage_operations():
     
     # 1. Create configuration
     logger.info("1. Creating Supabase configuration...")
-    config = SupabaseConfig(
-        url="https://demo.supabase.co",
-        service_key="demo-service-key",
-        table_name="demo_documents",
-        timeout=30,
-        max_retries=3
+    config = get_supabase_config()
     )
     
     # 2. Create storage adapter

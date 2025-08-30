@@ -12,8 +12,7 @@ from uuid import uuid4
 from src.adapters.secondary.ollama.ollama_embedding_adapter import OllamaEmbeddingAdapter
 from src.adapters.secondary.supabase.supabase_storage_adapter import SupabaseStorageAdapter
 from src.domain.models.document import Document, DocumentChunk
-from src.infrastructure.config.ollama_config import OllamaConfig
-from src.infrastructure.config.supabase_config import SupabaseConfig
+from src.config import get_ollama_config, get_supabase_config, create_test_ollama_config, create_test_supabase_config
 from tests.mocks.mock_supabase_client import MockSupabaseClient
 
 
@@ -26,7 +25,7 @@ class TestEndToEndEmbeddingStorageWorkflow:
     @pytest.fixture
     def ollama_config(self):
         """Create test Ollama configuration."""
-        return OllamaConfig(
+        return create_test_ollama_config(
             base_url="http://localhost:11434",
             model_name="nomic-embed-text",
             timeout=30,
@@ -37,7 +36,7 @@ class TestEndToEndEmbeddingStorageWorkflow:
     @pytest.fixture
     def supabase_config(self):
         """Create test Supabase configuration."""
-        return SupabaseConfig(
+        return create_test_supabase_config(
             url="https://test-project.supabase.co",
             service_key="test-service-key",
             table_name="test_documents",

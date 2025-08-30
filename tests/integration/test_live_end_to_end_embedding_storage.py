@@ -29,8 +29,7 @@ from datetime import datetime
 from src.adapters.secondary.ollama.ollama_embedding_adapter import OllamaEmbeddingAdapter
 from src.adapters.secondary.supabase.supabase_storage_adapter import SupabaseStorageAdapter
 from src.domain.models.document import Document, DocumentChunk
-from src.infrastructure.config.ollama_config import OllamaConfig
-from src.infrastructure.config.supabase_config import SupabaseConfig
+from src.config import get_ollama_config, get_supabase_config, create_test_ollama_config, create_test_supabase_config
 from src.domain.exceptions import EmbeddingError, StorageError
 
 
@@ -67,7 +66,7 @@ class TestLiveEndToEndEmbeddingStorageWorkflow:
         if not base_url:
             pytest.skip("OLLAMA_BASE_URL environment variable required for live tests")
         
-        return OllamaConfig(
+        return create_test_ollama_config(
             base_url=base_url,
             model_name=model_name,
             timeout=int(os.getenv("OLLAMA_TIMEOUT", "60")),
@@ -84,7 +83,7 @@ class TestLiveEndToEndEmbeddingStorageWorkflow:
         if not url or not service_key:
             pytest.skip("SUPABASE_URL and SUPABASE_SERVICE_KEY required for live tests")
         
-        return SupabaseConfig(
+        return create_test_supabase_config(
             url=url,
             service_key=service_key,
             table_name=os.getenv("SUPABASE_TABLE_NAME", "documents"),

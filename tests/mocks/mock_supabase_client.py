@@ -6,7 +6,7 @@ for unit and integration testing without requiring actual database connections.
 """
 
 from typing import Any, Dict, List
-from src.infrastructure.config.supabase_config import SupabaseConfig
+from src.config import get_supabase_config
 
 
 class MockSupabaseResponse:
@@ -142,7 +142,7 @@ class MockSupabaseClient:
     In production, this is replaced with the actual Supabase client.
     """
     
-    def __init__(self, config: SupabaseConfig):
+    def __init__(self, config: Any):
         """Initialize mock client with configuration.
         
         Args:
