@@ -5,6 +5,12 @@ Use these tests to validate real database functionality and explore data manuall
 
 IMPORTANT: These tests will create and delete real data in your Supabase database.
 Make sure you're using a test/development database, not production.
+
+To run without deprecation warnings from Supabase client:
+    PYTHONWARNINGS="ignore::DeprecationWarning" python -m pytest tests/integration/test_live_supabase_integration.py -m live -v -s
+
+Or run individual tests:
+    PYTHONWARNINGS="ignore::DeprecationWarning" python -m pytest tests/integration/test_live_supabase_integration.py::TestLiveSupabaseIntegration::test_live_database_connection -v -s
 """
 
 import os
