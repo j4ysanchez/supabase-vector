@@ -6,7 +6,7 @@ from typing import List, Dict, Any
 import httpx
 
 from src.ports.secondary.embedding_port import EmbeddingPort
-from src.infrastructure.config.ollama_config import OllamaConfig
+from src.config import get_ollama_config
 from src.domain.exceptions import EmbeddingError
 
 
@@ -16,14 +16,14 @@ logger = logging.getLogger(__name__)
 class OllamaEmbeddingAdapter(EmbeddingPort):
     """Ollama implementation of the EmbeddingPort interface."""
     
-    def __init__(self, config: OllamaConfig, client: httpx.AsyncClient = None):
+    def __init__(self, config=None, client: httpx.AsyncClient = None):
         """Initialize the Ollama embedding adapter.
         
         Args:
-            config: Ollama configuration settings
+            config: Optional Ollama configuration settings (uses global config if None)
             client: Optional httpx client for testing purposes
         """
-        self._config = config
+        self._config = config or get_ollama_config()
         self._client = client or httpx.AsyncClient(
             timeout=httpx.Timeout(self._config.timeout),
             limits=httpx.Limits(max_connections=10, max_keepalive_connections=5)

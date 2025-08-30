@@ -8,7 +8,7 @@ from uuid import UUID, uuid4
 
 from src.domain.exceptions import StorageError
 from src.domain.models.document import Document, DocumentChunk
-from src.infrastructure.config.supabase_config import SupabaseConfig
+from src.config import get_supabase_config
 from src.ports.secondary.storage_port import StoragePort
 from .retry_utils import with_retry
 
@@ -18,13 +18,13 @@ logger = logging.getLogger(__name__)
 class SupabaseStorageAdapter(StoragePort):
     """Supabase implementation of the StoragePort interface."""
     
-    def __init__(self, config: SupabaseConfig):
+    def __init__(self, config=None):
         """Initialize the Supabase storage adapter.
         
         Args:
-            config: Supabase configuration settings
+            config: Optional Supabase configuration settings (uses global config if None)
         """
-        self._config = config
+        self._config = config or get_supabase_config()
         self._client = None
         
     async def _get_client(self):
