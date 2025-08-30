@@ -79,22 +79,18 @@ async def test_generate_embedding_empty_text(embedding_service):
 @pytest.mark.unit
 def test_embedding_client_init():
     """Test EmbeddingClient initialization."""
-    with patch('vector_db.embedding.get_config') as mock_get_config:
-        mock_config = Mock()
+    with patch('vector_db.embedding.config') as mock_config:
         mock_config.ollama_url = "http://test:11434"
         mock_config.ollama_model = "test-model"
-        mock_config.ollama_timeout = 30
-        mock_config.ollama_max_retries = 3
-        mock_config.ollama_batch_size = 32
-        mock_get_config.return_value = mock_config
+        mock_config.max_retries = 3
         
         service = EmbeddingClient()
         
         assert service.base_url == "http://test:11434"
         assert service.model == "test-model"
-        assert service.timeout == 30
+        assert service.timeout == 60.0  # Default timeout
         assert service.max_retries == 3
-        assert service.batch_size == 32
+        assert service.batch_size == 32  # Default batch size
 
 
 @pytest.mark.integration

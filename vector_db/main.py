@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import List, Optional
 from uuid import UUID
 
-from .config import get_config
+from .config import config, get_config
 from .models import Document
 from .embedding import EmbeddingClient
 from .storage import StorageClient
@@ -24,7 +24,7 @@ class VectorDB:
     
     def __init__(self):
         """Initialize the vector database."""
-        self.config = get_config()
+        self.config = config
         self.embedding_client = EmbeddingClient()
         self.storage_client = StorageClient()
         

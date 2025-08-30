@@ -5,7 +5,7 @@ from datetime import datetime, timezone
 from typing import List, Optional
 from uuid import UUID, uuid4
 
-from .config import get_config
+from .config import config, get_config
 from .models import Document
 
 logger = logging.getLogger(__name__)
@@ -16,12 +16,11 @@ class StorageClient:
     
     def __init__(self):
         """Initialize with configuration."""
-        config = get_config()
         self.url = config.supabase_url
-        self.key = config.supabase_anon_key  # Use anon key for client operations
+        self.key = config.supabase_key  # Use the unified key field
         self.table = config.supabase_table
-        self.timeout = config.supabase_timeout
-        self.max_retries = config.supabase_max_retries
+        self.timeout = 30.0  # Default timeout
+        self.max_retries = config.max_retries
         self._client = None
     
     def _get_client(self):
@@ -93,8 +92,10 @@ class StorageClient:
             data = result.data[0]
             return Document(
                 filename=data["filename"],
-                content=data["content"],
-                embedding=data.get("embedding"),
+                file_path=data.get("file_path", f"/path/to/{data['filename']}"),
+                content_hash=data.get("content_hash", "unknown"),
+                content=data.get("content"),  # For compatibility
+                embedding=data.get("embedding"),  # For compatibility
                 metadata=data.get("metadata", {}),
                 id=UUID(data["id"]),
                 created_at=datetime.fromisoformat(data["created_at"].replace('Z', '+00:00')) if data.get("created_at") else None

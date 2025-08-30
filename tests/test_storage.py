@@ -112,21 +112,18 @@ def test_health_check_failure(storage_service):
 @pytest.mark.unit
 def test_storage_client_init():
     """Test StorageClient initialization."""
-    with patch('vector_db.storage.get_config') as mock_get_config:
-        mock_config = Mock()
+    with patch('vector_db.storage.config') as mock_config:
         mock_config.supabase_url = "https://test.supabase.co"
-        mock_config.supabase_anon_key = "test-key"
+        mock_config.supabase_key = "test-key"
         mock_config.supabase_table = "test_documents"
-        mock_config.supabase_timeout = 30
-        mock_config.supabase_max_retries = 3
-        mock_get_config.return_value = mock_config
+        mock_config.max_retries = 3
         
         service = StorageClient()
         
         assert service.url == "https://test.supabase.co"
         assert service.key == "test-key"
         assert service.table == "test_documents"
-        assert service.timeout == 30
+        assert service.timeout == 30.0  # Default timeout
         assert service.max_retries == 3
 
 

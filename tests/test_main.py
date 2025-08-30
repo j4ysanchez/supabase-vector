@@ -12,11 +12,9 @@ from vector_db.models import Document
 @pytest.mark.unit
 @patch('vector_db.main.StorageClient')
 @patch('vector_db.main.EmbeddingClient')
-@patch('vector_db.main.get_config')
-def test_vector_db_init(mock_get_config, mock_embedding, mock_storage):
+@patch('vector_db.main.config')
+def test_vector_db_init(mock_config, mock_embedding, mock_storage):
     """Test VectorDB initialization."""
-    mock_config = Mock()
-    mock_get_config.return_value = mock_config
     mock_config.setup_logging = Mock()
     
     db = VectorDB()

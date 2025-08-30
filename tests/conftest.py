@@ -16,11 +16,11 @@ from vector_db.embedding import EmbeddingClient
 @pytest.fixture
 def test_config():
     """Test configuration with safe defaults."""
-    return Config(
+    from vector_db.config import Config as VectorConfig
+    return VectorConfig(
         _env_file=None,  # Don't load .env file for tests
         supabase_url="https://test.supabase.co",
-        supabase_anon_key="test-anon-key",
-        supabase_service_key="test-service-key",
+        supabase_key="test-anon-key",
         supabase_table="test_documents",
         ollama_url="http://localhost:11434",
         ollama_model="nomic-embed-text",
@@ -110,10 +110,10 @@ def storage_service(test_config, mock_supabase_client):
         service._client = mock_supabase_client
         # Ensure the service has the test config values
         service.url = test_config.supabase_url
-        service.key = test_config.supabase_anon_key
+        service.key = test_config.supabase_key
         service.table = test_config.supabase_table
-        service.timeout = test_config.supabase_timeout
-        service.max_retries = test_config.supabase_max_retries
+        service.timeout = 30.0
+        service.max_retries = test_config.max_retries
         return service
 
 

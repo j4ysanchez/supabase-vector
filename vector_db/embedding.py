@@ -5,7 +5,7 @@ import logging
 from typing import List
 import httpx
 
-from .config import get_config
+from .config import config, get_config
 
 logger = logging.getLogger(__name__)
 
@@ -15,12 +15,11 @@ class EmbeddingClient:
     
     def __init__(self):
         """Initialize with configuration."""
-        config = get_config()
         self.base_url = config.ollama_url
         self.model = config.ollama_model
-        self.timeout = config.ollama_timeout
-        self.max_retries = config.ollama_max_retries
-        self.batch_size = config.ollama_batch_size
+        self.timeout = 60.0  # Default timeout
+        self.max_retries = config.max_retries
+        self.batch_size = 32  # Default batch size
     
     async def generate_embedding(self, text: str) -> List[float]:
         """Generate embedding for a single text.
